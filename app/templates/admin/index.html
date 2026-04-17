@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Brindes — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Brindes Cadastrados</h1>
+    <span class="page-subtitle">{{ active_prizes }} ativo(s) · {{ total_prizes }} unidade(s) disponível(is)</span>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('admin.prize_new') }}" class="btn btn-primary">+ Novo Brinde</a>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="filter-bar">
+  <span class="filter-label">Filtrar:</span>
+  <a href="{{ url_for('admin.index') }}" class="filter-btn {% if not request.args.get('tipo') and not request.args.get('ativo') %}active{% endif %}">Todos</a>
+  <a href="{{ url_for('admin.index', tipo='prize') }}" class="filter-btn {% if request.args.get('tipo') == 'prize' %}active{% endif %}">Brindes</a>
+  <a href="{{ url_for('admin.index', tipo='retry') }}" class="filter-btn {% if request.args.get('tipo') == 'retry' %}active{% endif %}">Tente Novamente</a>
+  <a href="{{ url_for('admin.index', tipo='no_win') }}" class="filter-btn {% if request.args.get('tipo') == 'no_win' %}active{% endif %}">Não Ganhou</a>
+  <a href="{{ url_for('admin.index', ativo='1') }}" class="filter-btn {% if request.args.get('ativo') == '1' %}active{% endif %}">Apenas Ativos</a>
+</div>
+
+{% if prizes %}
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:40px">Cor</th>
+        <th>Nome</th>
+        <th>Tipo</th>
+        <th style="width:100px; text-align:center">Quantidade</th>
+        <th style="width:90px; text-align:center">Status</th>
+        <th style="width:130px; text-align:center">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for prize in prizes %}
+      <tr class="{% if not prize.is_active %}row-inactive{% endif %}">
+        <td>
+          <span class="color-swatch" style="background:{{ prize.color }}"></span>
+        </td>
+        <td>
+          <span class="prize-name">{{ prize.name }}</span>
+          {% if prize.is_exhausted %}
+            <span class="badge badge-danger">ESGOTADO</span>
+          {% endif %}
+          {% if prize.item_type == 'prize' and prize.exhausted_behavior == 'act_as_retry' and prize.is_exhausted %}
+            <span class="badge badge-warning" title="Quando sorteado, exibe Tente Novamente">→ Retry</span>
+          {% endif %}
+          {% if prize.image_filename %}
+            <span class="badge badge-info" title="Possui imagem">📷</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if prize.item_type == 'prize' %}
+            <span class="type-badge type-prize">Brinde</span>
+          {% elif prize.item_type == 'retry' %}
+            <span class="type-badge type-retry">Tente Novamente</span>
+          {% else %}
+            <span class="type-badge type-no-win">Não Ganhou</span>
+          {% endif %}
+        </td>
+        <td style="text-align:center">
+          {% if prize.item_type == 'prize' %}
+            <span class="qty {% if prize.quantity == 0 %}qty-zero{% endif %}">{{ prize.quantity }}</span>
+          {% else %}
+            <span class="qty-weight">{{ (prize.weight * 100)|round(0)|int }}%</span>
+          {% endif %}
+        </td>
+        <td style="text-align:center">
+          <button
+            class="toggle-btn {% if prize.is_active %}active{% endif %}"
+            data-prize-id="{{ prize.id }}"
+            title="{{ 'Desativar' if prize.is_active else 'Ativar' }}"
+          >
+            {{ 'Ativo' if prize.is_active else 'Inativo' }}
+          </button>
+        </td>
+        <td style="text-align:center">
+          <div class="action-btns">
+            <a href="{{ url_for('admin.prize_edit', prize_id=prize.id) }}" class="btn btn-sm btn-secondary">Editar</a>
+            {% if prize.item_type == 'prize' %}
+            <form method="POST" action="{{ url_for('admin.prize_delete', prize_id=prize.id) }}" class="inline-form">
+              <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Excluir \'{{ prize.name }}\'?\nEsta ação não pode ser desfeita.')">
+                Excluir
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">🎁</div>
+  <h2>Nenhum brinde cadastrado</h2>
+  <p>Comece adicionando os brindes do evento.</p>
+  <a href="{{ url_for('admin.prize_new') }}" class="btn btn-primary">+ Cadastrar Primeiro Brinde</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+  initToggleButtons();
+</script>
+{% endblock %}

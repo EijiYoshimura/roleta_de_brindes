@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Histórico de Sorteios — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Histórico de Sorteios</h1>
+    <span class="page-subtitle">{{ total }} sorteio(s) registrado(s)</span>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('reports.export_csv') }}" class="btn btn-secondary">⬇ Exportar CSV</a>
+    <a href="{{ url_for('reports.export_pdf') }}" class="btn btn-secondary">⬇ Exportar PDF</a>
+  </div>
+</div>
+
+<!-- Resumo -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-value">{{ total }}</div>
+    <div class="stat-label">Total de Sorteios</div>
+  </div>
+  <div class="stat-card stat-green">
+    <div class="stat-value">{{ total_prizes }}</div>
+    <div class="stat-label">Prêmios Entregues</div>
+  </div>
+  <div class="stat-card stat-orange">
+    <div class="stat-value">{{ total_special }}</div>
+    <div class="stat-label">Tente Novamente / Não Ganhou</div>
+  </div>
+</div>
+
+{% if draws %}
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:60px; text-align:center">#</th>
+        <th style="width:180px">Data/Hora</th>
+        <th>Brinde</th>
+        <th style="width:160px; text-align:center">Tipo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for draw in draws %}
+      <tr>
+        <td style="text-align:center; color:#999">{{ draw.id }}</td>
+        <td class="date-cell">{{ draw.drawn_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td>{{ draw.prize_name }}</td>
+        <td style="text-align:center">
+          {% if draw.prize_type == 'prize' %}
+            <span class="type-badge type-prize">Prêmio</span>
+          {% elif draw.prize_type == 'retry' %}
+            <span class="type-badge type-retry">Tente Novamente</span>
+          {% else %}
+            <span class="type-badge type-no-win">Não Ganhou</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Paginação -->
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}
+    <a href="{{ url_for('admin.history', page=pagination.prev_num) }}" class="page-btn">← Anterior</a>
+  {% endif %}
+
+  {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+    {% if p %}
+      <a href="{{ url_for('admin.history', page=p) }}" class="page-btn {% if p == pagination.page %}current{% endif %}">{{ p }}</a>
+    {% else %}
+      <span class="page-ellipsis">…</span>
+    {% endif %}
+  {% endfor %}
+
+  {% if pagination.has_next %}
+    <a href="{{ url_for('admin.history', page=pagination.next_num) }}" class="page-btn">Próxima →</a>
+  {% endif %}
+</div>
+<p class="pagination-info">
+  Página {{ pagination.page }} de {{ pagination.pages }} · {{ total }} registros
+</p>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">📋</div>
+  <h2>Nenhum sorteio realizado</h2>
+  <p>O histórico será preenchido conforme os participantes girem a roleta.</p>
+  <a href="{{ url_for('roulette.index') }}" target="_blank" class="btn btn-primary">▶ Abrir Roleta</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Configurações — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Configurações</h1>
+    <span class="page-subtitle">Ajuste os pesos e parâmetros da roleta</span>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('roulette.index') }}" target="_blank" class="btn btn-outline">▶ Abrir Roleta</a>
+  </div>
+</div>
+
+<div class="form-card">
+  <form method="POST" action="{{ url_for('admin.settings') }}" id="settings-form" novalidate>
+
+    <h2 class="section-title">🎉 Nome do Evento</h2>
+    <div class="form-group">
+      <label for="event_name" class="form-label required">Nome do Evento</label>
+      <input
+        type="text"
+        id="event_name"
+        name="event_name"
+        class="form-input"
+        maxlength="100"
+        value="{{ settings.event_name }}"
+        placeholder="Ex: Feira de Tecnologia 2026"
+      />
+      <span class="form-hint">Aparece no cabeçalho do relatório PDF exportado.</span>
+    </div>
+
+    <hr class="section-divider" />
+
+    <h2 class="section-title">⚖️ Pesos dos Itens Especiais</h2>
+    <p class="section-desc">
+      Os pesos abaixo são percentuais <strong>relativos ao total de brindes disponíveis</strong>.
+      Se configurar "Tente Novamente" em 15%, este item terá aproximadamente 15% de chance,
+      independente de quantos brindes reais restam.
+    </p>
+
+    <div class="form-group">
+      <label for="retry_weight_range" class="form-label">
+        🔄 Peso — "Tente Novamente"
+        <span class="weight-display" id="retry-display">{{ (settings.retry_weight * 100)|round(0)|int }}%</span>
+      </label>
+      <input
+        type="range"
+        id="retry_weight_range"
+        min="0"
+        max="99"
+        value="{{ (settings.retry_weight * 100)|round(0)|int }}"
+        class="form-range"
+        oninput="updateWeightDisplay('retry', this.value)"
+      />
+      <input
+        type="hidden"
+        id="retry_weight"
+        name="retry_weight"
+        value="{{ settings.retry_weight }}"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="no_win_weight_range" class="form-label">
+        😔 Peso — "Não foi dessa vez"
+        <span class="weight-display" id="no_win-display">{{ (settings.no_win_weight * 100)|round(0)|int }}%</span>
+      </label>
+      <input
+        type="range"
+        id="no_win_weight_range"
+        min="0"
+        max="99"
+        value="{{ (settings.no_win_weight * 100)|round(0)|int }}"
+        class="form-range"
+        oninput="updateWeightDisplay('no_win', this.value)"
+      />
+      <input
+        type="hidden"
+        id="no_win_weight"
+        name="no_win_weight"
+        value="{{ settings.no_win_weight }}"
+      />
+    </div>
+
+    <div class="weight-summary" id="weight-summary">
+      <span>Soma dos especiais: <strong id="weight-sum">{{ ((settings.retry_weight + settings.no_win_weight) * 100)|round(0)|int }}%</strong></span>
+      <span>Chance para brindes reais: <strong id="weight-remaining">{{ (100 - (settings.retry_weight + settings.no_win_weight) * 100)|round(0)|int }}%</strong></span>
+    </div>
+
+    <hr class="section-divider" />
+
+    <h2 class="section-title">⏱️ Animação</h2>
+    <div class="form-group">
+      <label for="spin_duration_ms" class="form-label required">
+        Duração do Giro
+        <span class="weight-display" id="spin-display">{{ settings.spin_duration_ms }}ms</span>
+      </label>
+      <input
+        type="range"
+        id="spin_duration_range"
+        min="2000"
+        max="10000"
+        step="500"
+        value="{{ settings.spin_duration_ms }}"
+        class="form-range"
+        oninput="updateSpinDisplay(this.value)"
+      />
+      <input
+        type="hidden"
+        id="spin_duration_ms"
+        name="spin_duration_ms"
+        value="{{ settings.spin_duration_ms }}"
+      />
+      <span class="form-hint">Tempo de animação da roda de 2000ms (2s) a 10000ms (10s).</span>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-primary">💾 Salvar Configurações</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+  function updateWeightDisplay(type, val) {
+    const pct = parseInt(val);
+    document.getElementById(type + '-display').textContent = pct + '%';
+    document.getElementById(type + '_weight').value = (pct / 100).toFixed(2);
+    updateWeightSummary();
+  }
+
+  function updateSpinDisplay(val) {
+    document.getElementById('spin-display').textContent = val + 'ms';
+    document.getElementById('spin_duration_ms').value = val;
+  }
+
+  function updateWeightSummary() {
+    const retry = parseInt(document.getElementById('retry_weight_range').value);
+    const noWin = parseInt(document.getElementById('no_win_weight_range').value);
+    const sum = retry + noWin;
+    const remaining = 100 - sum;
+    document.getElementById('weight-sum').textContent = sum + '%';
+    document.getElementById('weight-remaining').textContent = remaining + '%';
+    const summary = document.getElementById('weight-summary');
+    summary.className = 'weight-summary' + (sum >= 90 ? ' warning' : '');
+  }
+
+  updateWeightSummary();
+</script>
+{% endblock %}

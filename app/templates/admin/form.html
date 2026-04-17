@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% set is_edit = prize is not none %}
+{% block title %}{{ 'Editar' if is_edit else 'Novo' }} Brinde — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>{{ 'Editar Brinde' if is_edit else 'Novo Brinde' }}</h1>
+    {% if is_edit %}
+      <span class="page-subtitle">Editando: {{ prize.name }}</span>
+    {% endif %}
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">← Voltar</a>
+  </div>
+</div>
+
+<div class="form-card">
+  <form
+    method="POST"
+    enctype="multipart/form-data"
+    action="{{ url_for('admin.prize_edit', prize_id=prize.id) if is_edit else url_for('admin.prize_new') }}"
+    id="prize-form"
+    novalidate
+  >
+    <!-- Nome -->
+    <div class="form-group">
+      <label for="name" class="form-label required">Nome do Brinde</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        class="form-input"
+        maxlength="100"
+        required
+        value="{{ form_data.get('name', prize.name if is_edit else '') }}"
+        placeholder="Ex: Fone de Ouvido Bluetooth"
+      />
+    </div>
+
+    <!-- Tipo -->
+    <div class="form-group">
+      <label for="item_type" class="form-label required">Tipo</label>
+      <select id="item_type" name="item_type" class="form-select" onchange="updateFormFields()">
+        <option value="prize" {% if (form_data.get('item_type') or (prize.item_type if is_edit else 'prize')) == 'prize' %}selected{% endif %}>
+          🎁 Brinde Real
+        </option>
+        <option value="retry" {% if (form_data.get('item_type') or (prize.item_type if is_edit else '')) == 'retry' %}selected{% endif %}>
+          🔄 Tente Novamente
+        </option>
+        <option value="no_win" {% if (form_data.get('item_type') or (prize.item_type if is_edit else '')) == 'no_win' %}selected{% endif %}>
+          😔 Não foi dessa vez
+        </option>
+      </select>
+    </div>
+
+    <!-- Cor -->
+    <div class="form-group">
+      <label for="color" class="form-label required">Cor do Segmento</label>
+      <div class="color-picker-row">
+        <input
+          type="color"
+          id="color"
+          name="color"
+          class="form-color"
+          value="{{ form_data.get('color', prize.color if is_edit else '#3498db') }}"
+        />
+        <span class="color-preview-label" id="color-label">
+          {{ form_data.get('color', prize.color if is_edit else '#3498db') }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Quantidade (apenas para prize) -->
+    <div class="form-group" id="group-quantity">
+      <label for="quantity" class="form-label required">Quantidade Disponível</label>
+      <input
+        type="number"
+        id="quantity"
+        name="quantity"
+        class="form-input"
+        min="0"
+        value="{{ form_data.get('quantity', prize.quantity if is_edit else 0) }}"
+        placeholder="0"
+      />
+      <span class="form-hint">Número de unidades deste brinde. Pode ser 0 para cadastrar como esgotado.</span>
+    </div>
+
+    <!-- Comportamento ao esgotar (apenas para prize) -->
+    <div class="form-group" id="group-exhausted">
+      <label class="form-label required">Comportamento ao Esgotar</label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="exhausted_behavior"
+            value="hide_weight"
+            {% if (form_data.get('exhausted_behavior') or (prize.exhausted_behavior if is_edit else 'hide_weight')) == 'hide_weight' %}checked{% endif %}
+          />
+          <div class="radio-content">
+            <strong>Nunca cair neste segmento</strong>
+            <p>O segmento fica visível na roda, mas nenhum participante cairá aqui após o estoque acabar.</p>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="exhausted_behavior"
+            value="act_as_retry"
+            {% if (form_data.get('exhausted_behavior') or (prize.exhausted_behavior if is_edit else '')) == 'act_as_retry' %}checked{% endif %}
+          />
+          <div class="radio-content">
+            <strong>Exibir como Esgotado → "Tente Novamente"</strong>
+            <p>O segmento pode ser sorteado normalmente, mas exibirá "Esgotado — Tente Novamente" ao invés do brinde.</p>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Peso (apenas para retry/no_win) -->
+    <div class="form-group" id="group-weight">
+      <label for="weight" class="form-label required">Peso (probabilidade)</label>
+      <div class="weight-row">
+        <input
+          type="range"
+          id="weight-range"
+          min="1"
+          max="99"
+          value="{{ ((form_data.get('weight', prize.weight if is_edit else 0.15)|float) * 100)|round|int }}"
+          oninput="syncWeight(this.value)"
+          class="form-range"
+        />
+        <input
+          type="number"
+          id="weight"
+          name="weight"
+          min="0.01"
+          max="0.99"
+          step="0.01"
+          value="{{ form_data.get('weight', prize.weight if is_edit else 0.15)|float }}"
+          class="form-input weight-input"
+          oninput="syncWeightFromNumber(this.value)"
+        />
+        <span class="weight-pct" id="weight-pct">{{ ((form_data.get('weight', prize.weight if is_edit else 0.15)|float) * 100)|round|int }}%</span>
+      </div>
+      <span class="form-hint">Percentual de chance deste item ser sorteado (relativo ao total de brindes disponíveis).</span>
+    </div>
+
+    <!-- Imagem -->
+    <div class="form-group">
+      <label for="image" class="form-label">Imagem (opcional)</label>
+      {% if is_edit and prize.image_filename %}
+        <div class="current-image">
+          <img src="{{ url_for('static', filename='uploads/' ~ prize.image_filename) }}" alt="{{ prize.name }}" class="img-preview" id="img-preview" />
+          <span class="form-hint">Imagem atual. Selecione um novo arquivo para substituir.</span>
+        </div>
+      {% else %}
+        <img src="" alt="" class="img-preview hidden" id="img-preview" />
+      {% endif %}
+      <input
+        type="file"
+        id="image"
+        name="image"
+        class="form-file"
+        accept=".jpg,.jpeg,.png,.webp,.gif"
+        onchange="previewImage(this)"
+      />
+      <span class="form-hint">JPG, PNG, WebP ou GIF. Máximo 5MB. Será redimensionada para 400×400px.</span>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        {{ '💾 Salvar Alterações' if is_edit else '✓ Cadastrar Brinde' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+  // Inicializar exibição de campos conforme tipo atual
+  updateFormFields();
+
+  // Atualizar label da cor em tempo real
+  document.getElementById('color').addEventListener('input', function() {
+    document.getElementById('color-label').textContent = this.value;
+  });
+</script>
+{% endblock %}

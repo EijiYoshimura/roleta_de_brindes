@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Roleta Virtual{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% block navbar %}
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="navbar-icon">🎯</span>
+      <a href="{{ url_for('admin.index') }}">Roleta Virtual</a>
+    </div>
+    <div class="navbar-links">
+      <a href="{{ url_for('admin.index') }}" class="{% if request.endpoint == 'admin.index' %}active{% endif %}">
+        Brindes
+      </a>
+      <a href="{{ url_for('admin.history') }}" class="{% if request.endpoint == 'admin.history' %}active{% endif %}">
+        Histórico
+      </a>
+      <a href="{{ url_for('admin.settings') }}" class="{% if request.endpoint == 'admin.settings' %}active{% endif %}">
+        Configurações
+      </a>
+      <a href="{{ url_for('roulette.index') }}" target="_blank" class="btn-outline">
+        ▶ Abrir Roleta
+      </a>
+    </div>
+  </nav>
+  {% endblock %}
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">
+              {{ message }}
+              <button class="flash-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+  <script>
+    // Auto-dismiss flash messages after 5 seconds
+    setTimeout(() => {
+      document.querySelectorAll('.flash').forEach(el => el.remove());
+    }, 5000);
+  </script>
+</body>
+</html>

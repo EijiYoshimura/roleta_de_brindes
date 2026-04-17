@@ -1,0 +1,316 @@
+/* ═══════════════════════════════════════════════════════════════
+   Roulette CSS — Roleta Virtual
+   Fullscreen kiosk layout, pure CSS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Reset & Base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.hidden { display: none !important; }
+
+:root {
+  --btn-spin:       #e74c3c;
+  --btn-spin-hover: #c0392b;
+  --btn-spin-text:  #ffffff;
+  --overlay-bg:     rgba(0, 0, 0, .75);
+  --overlay-card:   #ffffff;
+  --text-dark:      #1e293b;
+  --text-muted:     #64748b;
+  --shadow-lg:      0 20px 40px rgba(0,0,0,.35);
+  --radius-card:    20px;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #1a1a2e;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #ffffff;
+  user-select: none;
+}
+
+/* ── Layout principal ─────────────────────────────────────────── */
+.roulette-screen {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: radial-gradient(ellipse at top, #16213e 0%, #0f0c29 100%);
+}
+
+/* ── Título do evento ──────────────────────────────────────────── */
+.event-title {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #f1c40f;
+  text-shadow: 0 2px 8px rgba(241,196,15,.4);
+  text-align: center;
+}
+
+/* ── Wrapper da roda + ponteiro ───────────────────────────────── */
+.wheel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#wheel-canvas {
+  display: block;
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px rgba(255,255,255,.15), 0 8px 32px rgba(0,0,0,.5);
+  transition: box-shadow .3s;
+}
+
+#wheel-canvas.spinning {
+  box-shadow: 0 0 0 6px rgba(241,196,15,.6), 0 8px 48px rgba(241,196,15,.3);
+}
+
+/* ── Ponteiro fixo (triângulo no topo) ───────────────────────── */
+.wheel-pointer {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left:  18px solid transparent;
+  border-right: 18px solid transparent;
+  border-top:   36px solid #f1c40f;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
+  z-index: 10;
+}
+
+/* ── Hub central (botão de girar) ─────────────────────────────── */
+
+/* ── Botão de girar (fora da roda) ────────────────────────────── */
+.btn-spin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  background: var(--btn-spin);
+  color: var(--btn-spin-text);
+  border: none;
+  border-radius: 50px;
+  padding: .9rem 3rem;
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(231,76,60,.45);
+  transition: background .2s, transform .15s, box-shadow .2s;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.btn-spin:hover:not(:disabled) {
+  background: var(--btn-spin-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(231,76,60,.55);
+}
+
+.btn-spin:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 3px 10px rgba(231,76,60,.4);
+}
+
+.btn-spin:disabled {
+  background: #555;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.btn-spin-icon {
+  font-size: 1.4em;
+  animation: none;
+}
+
+.btn-spin:not(:disabled):hover .btn-spin-icon {
+  animation: spin-hint .6s ease-in-out;
+}
+
+@keyframes spin-hint {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ── Estado vazio ─────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: rgba(255,255,255,.5);
+}
+
+.empty-state h2 {
+  font-size: 1.5rem;
+  margin-bottom: .5rem;
+}
+
+.empty-state p {
+  font-size: .95rem;
+}
+
+/* ── Link discreet para admin ─────────────────────────────────── */
+.admin-hint {
+  position: fixed;
+  bottom: 12px;
+  right: 16px;
+  font-size: .72rem;
+  color: rgba(255,255,255,.2);
+  text-decoration: none;
+  letter-spacing: .03em;
+  transition: color .2s;
+  z-index: 5;
+}
+
+.admin-hint:hover {
+  color: rgba(255,255,255,.6);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   OVERLAY DE RESULTADO
+   ══════════════════════════════════════════════════════════════ */
+.result-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+
+.result-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.result-card {
+  background: var(--overlay-card);
+  color: var(--text-dark);
+  border-radius: var(--radius-card);
+  padding: 2.5rem 2rem;
+  max-width: min(480px, 90vw);
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  transform: scale(.85);
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+
+.result-overlay.visible .result-card {
+  transform: scale(1);
+}
+
+.result-emoji {
+  font-size: clamp(3rem, 10vw, 5rem);
+  margin-bottom: .5rem;
+  display: block;
+  animation: bounce-in .5s .2s both;
+}
+
+@keyframes bounce-in {
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.result-label {
+  font-size: clamp(.75rem, 2vw, .9rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-muted);
+  margin-bottom: .3rem;
+}
+
+.result-title {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 1rem;
+  word-break: break-word;
+}
+
+.result-title.prize-win {
+  color: #16a34a;
+}
+
+.result-title.retry {
+  color: #d97706;
+}
+
+.result-title.no-win {
+  color: #64748b;
+}
+
+.result-title.exhausted {
+  color: #b45309;
+}
+
+.result-img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin: 0 auto 1rem;
+  display: block;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+}
+
+.result-msg {
+  font-size: clamp(.85rem, 2vw, 1rem);
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.btn-ok {
+  display: inline-block;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  padding: .7rem 2.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+  outline: none;
+}
+
+.btn-ok:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-ok:active {
+  transform: translateY(1px);
+}
+
+/* ── Badge "ESGOTADO" no card ─────────────────────────────────── */
+.exhausted-badge {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  padding: .2rem .7rem;
+  border-radius: 20px;
+  margin-bottom: .75rem;
+  text-transform: uppercase;
+}

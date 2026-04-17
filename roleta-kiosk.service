@@ -1,0 +1,41 @@
+[Unit]
+Description=Roleta Virtual — Chromium Kiosk
+After=graphical.target roleta.service
+Wants=graphical.target
+Requires=roleta.service
+
+[Service]
+Type=simple
+User=USER_PLACEHOLDER
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/USER_PLACEHOLDER/.Xauthority
+
+# Desabilitar screensaver e DPMS antes de abrir o Chromium
+ExecStartPre=/bin/sh -c "xset s off; xset -dpms; xset s noblank"
+
+# Remover perfil corrompido que pode causar prompt de "restaurar sessão"
+ExecStartPre=/bin/sh -c "rm -f /home/USER_PLACEHOLDER/.config/chromium/Default/Preferences"
+
+ExecStart=/usr/bin/chromium-browser \
+    --kiosk \
+    --noerrdialogs \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-restore-session-state \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-translate \
+    --disable-features=TranslateUI \
+    --check-for-update-interval=31536000 \
+    --password-store=basic \
+    --user-data-dir=/home/USER_PLACEHOLDER/.config/chromium-kiosk \
+    http://localhost:5000
+
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=roleta-kiosk
+
+[Install]
+WantedBy=graphical.target

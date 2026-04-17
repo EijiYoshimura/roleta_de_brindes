@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ event_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/roulette.css') }}" />
+</head>
+<body>
+  <div class="roulette-screen" id="roulette-screen">
+
+    <h1 class="event-title">{{ event_name }}</h1>
+
+    <!-- Roda -->
+    <div class="wheel-wrapper" id="wheel-wrapper">
+      <div class="wheel-pointer" aria-hidden="true"></div>
+      <canvas id="wheel-canvas" width="520" height="520" aria-label="Roleta de brindes"></canvas>
+    </div>
+
+    <!-- Botão de girar -->
+    <button
+      class="btn-spin"
+      id="btn-spin"
+      onclick="spinWheel()"
+      aria-label="Girar a roleta"
+    >
+      <span class="btn-spin-icon">🎰</span>
+      GIRAR
+    </button>
+
+    <!-- Estado vazio (hidden por padrão, exibido via JS) -->
+    <div class="empty-state hidden" id="empty-state">
+      <h2>🎁 Nenhum brinde disponível</h2>
+      <p>Cadastre brindes no painel de administração para iniciar a roleta.</p>
+    </div>
+
+  </div>
+
+  <!-- Overlay de resultado -->
+  <div class="result-overlay" id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title">
+    <div class="result-card" id="result-card">
+      <span class="result-emoji" id="result-emoji">🎉</span>
+      <div class="result-label" id="result-label">Parabéns!</div>
+      <div class="result-title" id="result-title"></div>
+      <img class="result-img hidden" id="result-img" src="" alt="" />
+      <p class="result-msg" id="result-msg"></p>
+      <button class="btn-ok" id="btn-ok" onclick="closeResult()">OK</button>
+    </div>
+  </div>
+
+  <!-- Link discreto para o admin -->
+  <a href="/admin" class="admin-hint" tabindex="-1">⚙ admin</a>
+
+  <script>
+    // Dados passados pelo backend (Jinja2 → JS)
+    const SPIN_DURATION_MS = {{ spin_duration }};
+  </script>
+  <script src="{{ url_for('static', filename='js/roulette.js') }}"></script>
+</body>
+</html>
