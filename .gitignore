@@ -1,0 +1,62 @@
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+
+# ── Virtual environments ───────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# ── Flask / instance folder ────────────────────────────────────────
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Uploads (user content) ─────────────────────────────────────────
+app/static/uploads/
+
+# ── Logs ───────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Distribution / packaging ───────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+
+# ── Pytest / coverage ─────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Mypy / type checkers ───────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+
+# ── IDE & editors ──────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Secrets / environment ──────────────────────────────────────────
+.env
+.env.*
+!.env.example
+secrets.py
+config_local.py
